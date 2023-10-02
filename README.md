@@ -40,7 +40,7 @@ C:\Backups\BackupSet1
 ## Calling the PowerShell Script from a Batch File
 You can call the PowerShell script from a batch file using the following command:
 ```plaintext
-powershell.exe -ExecutionPolicy Bypass -File BackupMonitor.ps1 -config "config.txt"
+powershell.exe -ExecutionPolicy Bypass -File backupmon.ps1 -config "config.txt"
 ```
 Replace `config.txt` with the path to your configuration file.
 
