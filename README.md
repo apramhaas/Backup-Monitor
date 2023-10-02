@@ -36,3 +36,19 @@ smtpServer = smtp.yourmailserver.com
 [Paths]
 C:\Backups\BackupSet1
 \\Server\Backup\BackupSet2
+```
+## Calling the PowerShell Script from a Batch File
+You can call the PowerShell script from a batch file using the following command:
+```plaintext
+powershell.exe -ExecutionPolicy Bypass -File BackupMonitor.ps1 -config "config.txt"
+```
+Replace `config.txt` with the path to your configuration file.
+
+## Usage
+1. Create a configuration file as described in the example above.
+2. Save the PowerShell script and the configuration file in the same directory.
+3. Run the script using the command provided above, either manually or as part of an automated backup monitoring process.
+
+For more information and detailed usage instructions, please refer to the comments within the script itself.
+
+Feel free to customize the script and configuration to meet your specific backup monitoring needs.
