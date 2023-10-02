@@ -9,7 +9,7 @@ This script is distributed under the terms of the GNU General Public License (GP
 ## Checks Performed
 The script performs the following checks on each backup set:
 
-1. **Minimum Backup Sets:** Ensures that there are a minimum number of backup sets available for monitoring.
+1. **Minimum Backup Sets:** Ensures that there are a minimum number of backup sets available in the specified path.
 
 2. **Backup Frequency:** Detects the backup frequency pattern based on timestamps and checks if the latest backup aligns with the determined pattern.
 
@@ -18,13 +18,18 @@ The script performs the following checks on each backup set:
 ## Configuration and Parameters
 The script can be configured using a configuration file. The following parameters can be specified in the configuration file:
 
-- `minBackupSets`: Minimum number of backup sets required for monitoring.
+- `minBackupSets`: Minimum number of backup sets required.
 - `emailSender`: Email address of the sender for notification emails.
 - `notificationEmail`: Email address to which notification emails will be sent.
 - `notifyType`: Notification type, with valid values: `off`, `alarm`, `always`, `alarmonlastbackup`.
+  - `off`: No mails will be sent.
+  - `alarm`: A mail will be sent when an alarm was raised.
+  - `always`: A mail will always be sent with a summary after a run of the script
+  - `alarmonlastbackup`: A mail will be sent only when an alarm, concerning the newest backup in the list, was raised.
 - `smtpServer`: SMTP server address for sending notification emails.
 - `backupPaths`: An array of backup paths to monitor.
 
+Emails will only be sent if specified parameters `emailSender`, `notificationEmail`, `notifyType` and `smtpServer` are provided with valid values.
 ## Example Configuration File
 ```plaintext
 minBackupSets = 5
@@ -45,9 +50,11 @@ powershell.exe -ExecutionPolicy Bypass -File backupmon.ps1 -config "config.txt"
 Replace `config.txt` with the path to your configuration file.
 
 ## Usage
-1. Create a configuration file as described in the example above.
-2. Save the PowerShell script and the configuration file in the same directory.
-3. Run the script using the command provided above, either manually or as part of an automated backup monitoring process.
+1. **Create a configuration file as described in the example above.
+
+2. **Save the PowerShell script and the configuration file in the same directory.
+
+3. **Run the script using the command provided above, either manually or as part of an automated backup monitoring process.
 
 For more information and detailed usage instructions, please refer to the comments within the script itself.
 
