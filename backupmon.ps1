@@ -23,6 +23,7 @@ param
     [string]$config
 )
 
+# Set to true to log extended data of internal variable states. You can also add a 'debug=true' line in the config file
 $debug = $False
 
 # Function to send an email report
@@ -203,6 +204,7 @@ foreach ($path in $backupPaths) {
             for ($i = 0; $i -lt ($differences.Length - 1); $i++) {                
                 if ($differences[$i] -ne 0) {                    
                     $discrepancy = ([Math]::Round((([Math]::Abs($differences[$i] - $differences[$i + 1])) / $differences[$i]) * 100))
+                    # Extended logging when debug flag is enabled
                     if ($debug) {
                         $leaf1 = Split-Path -Path $backupItems[$i] -Leaf
                         $leaf2 = Split-Path -Path $backupItems[$i + 1] -Leaf
@@ -269,12 +271,15 @@ else {
 # Send the summary report via email
 if ($notificationEmail -ne "your@email.com" -And $smtpServer -ne "smtp.yourmailserver.com" -And $notifyType -ne "off") {
     Write-Host "Send e-mail with summary to $notificationEmail"
+    # Always send an email report
     if ($failedBackups.Count -eq 0 -And $notifyType -eq "always") {
         Send-EmailReport -subject "Backup monitor summary" -body $reportBody
     }
+    # Send email report only wehn an alarm is raised
     elseif ($failedBackups.Count -gt 0 -And $notifyType -eq "alarm") {
         Send-EmailReport -subject "Backup monitor summary with ALARMs" -body $reportBody
     }
+    # Send email report only when an alarm is raised regarding the newest backup
     elseif ($failedBackups.Count -gt 0 -And $notifyType -eq "alarmonlastbackup" -and $alarmOnLastBackup -eq $True) {
         Send-EmailReport -subject "Backup monitor summary with ALARMs" -body $reportBody
     }
