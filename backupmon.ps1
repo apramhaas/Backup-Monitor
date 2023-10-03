@@ -225,7 +225,6 @@ foreach ($path in $backupPaths) {
                     }
                 }
                 if ($exitloop) { break }
-                if ($exitloop) { break }
             }
         }
 
