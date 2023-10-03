@@ -54,7 +54,7 @@ C:\Backups\BackupApp1
 You can call the PowerShell script from a batch file or directly using the following command:
 
 ```plaintext
-powershell.exe "& -ExecutionPolicy Bypass 'backupmon.ps1' -config 'config.txt'" > backupmon.log
+powershell.exe -ExecutionPolicy Bypass -File "backupmon.ps1" -config "config.txt" > backupmon.log
 ```
 
 Replace `config.txt` with the path to your configuration file. All output will be logged to the file `backupmon.log`
