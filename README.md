@@ -31,7 +31,7 @@ The script can be configured using a configuration file. The following parameter
   - `always`: A mail will always be sent with a summary after a run of the script
   - `alarmonlastbackup`: A mail will be sent only when an alarm, concerning the newest backup in the list, was raised.
 - `smtpServer`: SMTP server address for sending notification emails.
-- `backupPaths`: An array of backup paths to monitor. Each path is assumed to contain the backup sets of one individual application or system. It doesn't matter if a backup set consits of a file or a folder holding multiple files.
+- `backupPaths`: An array of backup paths to monitor. Each path is assumed to contain the backup sets of one individual application or system. It doesn't matter if a backup set consits of a file or a folder holding multiple files. A path can locate any resource on local drives or on a SMB share.
 
 Emails will only be sent if specified parameters `emailSender`, `notificationEmail`, `notifyType` and `smtpServer` are provided with valid values.
 

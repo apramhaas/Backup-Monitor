@@ -1,6 +1,7 @@
 <#
     Backup Monitor PowerShell Script
     Copyright (C) 2023 Andreas Pramhaas
+    https://github.com/apramhaas/Backup-Monitor
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
