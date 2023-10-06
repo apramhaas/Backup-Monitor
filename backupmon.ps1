@@ -155,7 +155,7 @@ foreach ($path in $backupPaths) {
         if ($backupItems.Count -lt $minBackupSets) {
             # If there is a backup that is not older than 25 hours it's probably a fresh start and ignore
             if ($backupItems.Count -gt 0) {
-                if (($currentDate - $backupItems[-1].LastWriteTime).TotalSeconds -ge 90000) {
+                if (([datetime]$currentDate - [datetime]$backupItems[-1].LastWriteTime).TotalSeconds -ge 90000) {
                     $failedBackups += "${path}: Less than $minBackupSets backup sets found."
                     $alarmOnLastBackup = $True
                     continue
@@ -190,7 +190,8 @@ foreach ($path in $backupPaths) {
         Write-Host "${path}: Calculated median of time span between the backups sets is ${medianDateDiff} seconds"
 
         # Check if the difference between the last backup timestamp and now is below the calculated median with a 5 % discrepancy allowed        
-        $differenceToCheck = ($currentDate - $backupItems[-1].LastWriteTime).TotalSeconds
+        $differenceToCheck = ([datetime]$currentDate - [datetime]$backupItems[-1].LastWriteTime).TotalSeconds
+
         # Define the allowable discrepancy (5 %)
         $allowableDiscrepancy = $medianDateDiff * 1.05
         if ($differenceToCheck -gt $allowableDiscrepancy) {
