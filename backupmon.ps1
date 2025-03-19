@@ -304,21 +304,27 @@ if ($notificationEmail -ne "" -And $smtpServer -ne "" -And $notifyType -ne "off"
         Write-Host "No valid email addresses found. Skipping email notification."
     }
     else {
-        foreach ($email in $validEmailAddresses) {
-            Write-Host "Sending email to $email"
-            # Always send an email report
-            if ($failedBackups.Count -eq 0 -And $notifyType -eq "always") {
+        # Always send an email report
+        if ($failedBackups.Count -eq 0 -And $notifyType -eq "always") {
+            foreach ($email in $validEmailAddresses) {
+                Write-Host "Sending email to $email"
                 Send-EmailReport -subject "Backup monitor summary" -body $reportBody -email $email
             }
-            # Send email report only when an alarm is raised
-            elseif ($failedBackups.Count -gt 0 -And $notifyType -eq "alarm") {
-                Send-EmailReport -subject "Backup monitor summary with ALARMs" -body $reportBody -email $email
-            }
-            # Send email report only when an alarm is raised regarding the newest backup
-            elseif ($failedBackups.Count -gt 0 -And $notifyType -eq "alarmonlastbackup" -and $alarmOnLastBackup -eq $True) {
+        }
+        # Send email report only when an alarm is raised
+        elseif ($failedBackups.Count -gt 0 -And $notifyType -eq "alarm") {
+            foreach ($email in $validEmailAddresses) {
+                Write-Host "Sending email to $email"
                 Send-EmailReport -subject "Backup monitor summary with ALARMs" -body $reportBody -email $email
             }
         }
+        # Send email report only when an alarm is raised regarding the newest backup
+        elseif ($failedBackups.Count -gt 0 -And $notifyType -eq "alarmonlastbackup" -and $alarmOnLastBackup -eq $True) {
+            foreach ($email in $validEmailAddresses) {
+                Write-Host "Sending email to $email"
+                Send-EmailReport -subject "Backup monitor summary with ALARMs" -body $reportBody -email $email
+            }
+        } 
     }
 }
 
