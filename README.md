@@ -6,7 +6,7 @@ The Backup Monitor PowerShell script is designed to monitor backup sets and ensu
 
 ## Copyright & License
 
-This script is distributed under the terms of the GNU General Public License (GPL) version 3. You can find a copy of the license in the [LICENSE](LICENSE] file.
+This script is distributed under the terms of the GNU General Public License (GPL) version 3. You can find a copy of the license in the [LICENSE] file.
 
 ## Checks Performed
 
