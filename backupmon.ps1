@@ -15,6 +15,11 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+    # Version: 1.1.0
+    # History:
+    # - 1.0.0: Initial release
+    # - 1.1.0: Added support for multiple email addresses in the notificationEmail parameter (2025-03-19)
 #>
 
 param
@@ -31,16 +36,25 @@ $debug = $False
 function Send-EmailReport {
     param (
         [string]$subject,
-        [string]$body
+        [string]$body,
+        [string]$email
     )
 
     $smtp = New-Object Net.Mail.SmtpClient($smtpServer)
     $message = New-Object Net.Mail.MailMessage
     $message.From = $emailSender
-    $message.To.Add($notificationEmail)
+    $message.To.Add($email)
     $message.Subject = $subject
     $message.Body = $body
     $smtp.Send($message)
+}
+
+# Function to validate email addresses
+function Test-EmailAddress {
+    param (
+        [string]$email
+    )
+    return $email -match '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
 }
 
 # Function to get the size of a backup (file or directory)
@@ -91,11 +105,11 @@ if (Test-Path $config) {
 
     # Define default values
     $minBackupSets = 5
-    $emailSender = "backup-monitor@yourdomain.com"
-    $notificationEmail = "your@email.com"
+    $emailSender = ""
+    $notificationEmail = ""
     # Control if a mail is sent. Valid values for notifyType: off, alarm, always, alarmonlastbackup
     $notifyType = "off"
-    $smtpServer = "smtp.yourmailserver.com"
+    $smtpServer = ""
     $backupPaths = @()
     $alarmOnLastBackup = $False
 
@@ -270,21 +284,42 @@ else {
 }
 
 # Send the summary report via email
-if ($notificationEmail -ne "your@email.com" -And $smtpServer -ne "smtp.yourmailserver.com" -And $notifyType -ne "off") {
-    Write-Host "Send e-mail with summary to $notificationEmail"
-    # Always send an email report
-    if ($failedBackups.Count -eq 0 -And $notifyType -eq "always") {
-        Send-EmailReport -subject "Backup monitor summary" -body $reportBody
-    }
-    # Send email report only wehn an alarm is raised
-    elseif ($failedBackups.Count -gt 0 -And $notifyType -eq "alarm") {
-        Send-EmailReport -subject "Backup monitor summary with ALARMs" -body $reportBody
-    }
-    # Send email report only when an alarm is raised regarding the newest backup
-    elseif ($failedBackups.Count -gt 0 -And $notifyType -eq "alarmonlastbackup" -and $alarmOnLastBackup -eq $True) {
-        Send-EmailReport -subject "Backup monitor summary with ALARMs" -body $reportBody
+if ($notificationEmail -ne "" -And $smtpServer -ne "" -And $notifyType -ne "off") {
+    Write-Host "`nPreparing to send e-mail with summary to $notificationEmail"
+
+    # Split the email addresses and validate each one
+    $emailAddresses = $notificationEmail -split ','
+    $validEmailAddresses = @()
+    foreach ($email in $emailAddresses) {
+        $trimmedEmail = $email.Trim()
+        if (Test-EmailAddress -EmailAddress -email $trimmedEmail) {
+            $validEmailAddresses += $trimmedEmail
+        }
+        else {
+            Write-Host "Invalid email address detected: $trimmedEmail"
+        }
     }
 
+    if ($validEmailAddresses.Count -eq 0) {
+        Write-Host "No valid email addresses found. Skipping email notification."
+    }
+    else {
+        foreach ($email in $validEmailAddresses) {
+            Write-Host "Sending email to $email"
+            # Always send an email report
+            if ($failedBackups.Count -eq 0 -And $notifyType -eq "always") {
+                Send-EmailReport -subject "Backup monitor summary" -body $reportBody -email $email
+            }
+            # Send email report only when an alarm is raised
+            elseif ($failedBackups.Count -gt 0 -And $notifyType -eq "alarm") {
+                Send-EmailReport -subject "Backup monitor summary with ALARMs" -body $reportBody -email $email
+            }
+            # Send email report only when an alarm is raised regarding the newest backup
+            elseif ($failedBackups.Count -gt 0 -And $notifyType -eq "alarmonlastbackup" -and $alarmOnLastBackup -eq $True) {
+                Send-EmailReport -subject "Backup monitor summary with ALARMs" -body $reportBody -email $email
+            }
+        }
+    }
 }
 
 Write-Host "`n$reportBody"

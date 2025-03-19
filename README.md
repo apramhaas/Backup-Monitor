@@ -6,7 +6,7 @@ The Backup Monitor PowerShell script is designed to monitor backup sets and ensu
 
 ## Copyright & License
 
-This script is distributed under the terms of the GNU General Public License (GPL) version 3. You can find a copy of the license in the [LICENSE](LICENSE) file.
+This script is distributed under the terms of the GNU General Public License (GPL) version 3. You can find a copy of the license in the [LICENSE](LICENSE] file.
 
 ## Checks Performed
 
@@ -24,23 +24,23 @@ The script can be configured using a configuration file. The following parameter
 
 - `minBackupSets`: Minimum number of backup sets required.
 - `emailSender`: Email address of the sender for notification emails.
-- `notificationEmail`: Email address to which notification emails will be sent.
+- `notificationEmail`: One or more email addresses (comma-separated) to which notification emails will be sent. Each email address will be validated for correct syntax before sending.
 - `notifyType`: Notification type, with valid values: `off`, `alarm`, `always`, `alarmonlastbackup`.
   - `off`: No mails will be sent.
   - `alarm`: A mail will be sent when an alarm was raised.
-  - `always`: A mail will always be sent with a summary after a run of the script
+  - `always`: A mail will always be sent with a summary after a run of the script.
   - `alarmonlastbackup`: A mail will be sent only when an alarm, concerning the newest backup in the list, was raised.
 - `smtpServer`: SMTP server address for sending notification emails.
-- `backupPaths`: An array of backup paths to monitor. Each path is assumed to contain the backup sets of one individual application or system. It doesn't matter if a backup set consits of a file or a folder holding multiple files. A path can locate any resource on local drives or on a SMB share.
+- `backupPaths`: An array of backup paths to monitor. Each path is assumed to contain the backup sets of one individual application or system. It doesn't matter if a backup set consists of a file or a folder holding multiple files. A path can locate any resource on local drives or on an SMB share.
 
-Emails will only be sent if specified parameters `emailSender`, `notificationEmail`, `notifyType` and `smtpServer` are provided with valid values.
+Emails will only be sent if the parameters `emailSender`, `notificationEmail`, `notifyType`, and `smtpServer` are provided with valid values.
 
 ## Example Configuration File
 
 ```plaintext
 minBackupSets = 5
 emailSender = backup-monitor@yourdomain.com
-notificationEmail = your@email.com
+notificationEmail = admin1@domain.com, admin2@domain.com
 notifyType = alarmonlastbackup
 smtpServer = smtp.yourmailserver.com
 
