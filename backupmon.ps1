@@ -292,7 +292,7 @@ if ($notificationEmail -ne "" -And $smtpServer -ne "" -And $notifyType -ne "off"
     $validEmailAddresses = @()
     foreach ($email in $emailAddresses) {
         $trimmedEmail = $email.Trim()
-        if (Test-EmailAddress -EmailAddress -email $trimmedEmail) {
+        if (Test-EmailAddress -email $trimmedEmail) {
             $validEmailAddresses += $trimmedEmail
         }
         else {
