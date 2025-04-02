@@ -1,6 +1,6 @@
 <#
     Backup Monitor PowerShell Script
-    Copyright (C) 2023 Andreas Pramhaas
+    Copyright (C) 2023-2025 Andreas Pramhaas
     https://github.com/apramhaas/Backup-Monitor
 
     This program is free software: you can redistribute it and/or modify
@@ -20,6 +20,7 @@
     # History:
     # - 1.0.0: Initial release
     # - 1.1.0: Added support for multiple email addresses in the notificationEmail parameter (2025-03-19)
+    # - 1.2.0: Enforce minimum backup sets to 2 and improve backup time pattern calculations (2025-04-02)
 #>
 
 param
@@ -137,14 +138,19 @@ if (Test-Path $config) {
 
     # Display the read or default values
     Write-Host "Backup monitor started. These values where read from the config file. If not specified a default value was used."    
-    Write-Host "minBackupSets: $minBackupSets"
-    Write-Host "emailSender: $emailSender"
-    Write-Host "notificationEmail: $notificationEmail"
-    Write-Host "smtpServer: $smtpServer"
-    Write-Host "notifyType: $notifyType"
+    Write-Host "minBackupSets = $minBackupSets"
+    Write-Host "emailSender = $emailSender"
+    Write-Host "notificationEmail = $notificationEmail"
+    Write-Host "smtpServer = $smtpServer"
+    Write-Host "notifyType = $notifyType"
     Write-Host "Paths:"
     $backupPaths | ForEach-Object {
         Write-Host $_
+    }
+
+    if ($minBackupSets -lt 2) {
+        $minBackupSets = 2;
+        Write-Host "minBackupSets value must be minimum 2 for this script to work correctly. Forcing to 2!"
     }
 }
 else {
@@ -165,7 +171,7 @@ foreach ($path in $backupPaths) {
         # Get a list of backup files and directories sorted by create time
         $backupItems = Get-ChildItem -Path $path | Sort-Object LastWriteTime
 
-        # Ensure a minimum of $minBackupSets backup sets
+        # Ensure a minimum of $minBackupSets (forced to at least 2) backup sets, otherwise continue in the next path instead of further tests
         if ($backupItems.Count -lt $minBackupSets) {
             # If there is a backup that is not older than 25 hours it's probably a fresh start and ignore
             if ($backupItems.Count -gt 0) {
@@ -186,22 +192,35 @@ foreach ($path in $backupPaths) {
             }
         }
 
-        # Determine the pattern frequency based on timestamps 
-        # Calculate the differences between timestamps
-        $differences = @()
-        for ($i = 0; $i -lt ($backupItems.Count - 1); $i++) {
-            $diff = ($backupItems[$i + 1].LastWriteTime - $backupItems[$i].LastWriteTime).TotalSeconds
-            $differences += $diff
-            if ($debug) {
-                $diff1 = $backupItems[$i + 1].LastWriteTime
-                $diff2 = $backupItems[$i].LastWriteTime
-                Write-Host "diff1 = $diff1, diff2 = $diff2, diff = $diff"
+        # Determine the pattern frequency based on timestamps. Code above
+        # ensures that at least 2 backups samples are available here. If more
+        # than two samples are available, calculate the median of all
+        # differences. Average doesn't make sense, as an outlier would skew the value.
+
+        if ($backupItems.Count -gt 2) {        
+            # Calculate the differences between timestamps
+            $differences = @()
+            for ($i = 0; $i -lt ($backupItems.Count - 1); $i++) {
+                $diff = ($backupItems[$i + 1].LastWriteTime - $backupItems[$i].LastWriteTime).TotalSeconds
+                $differences += $diff
+                if ($debug) {
+                    $diff1 = $backupItems[$i + 1].LastWriteTime
+                    $diff2 = $backupItems[$i].LastWriteTime
+                    Write-Host "diff1 = $diff1, diff2 = $diff2, diff = $diff"
+                }
             }
+
+            # Calculate the median of the differences
+            $medianDateDiff = Get-Median -numbers $differences
+            $medianDateDiff = [math]::Round($medianDateDiff)
+            Write-Host "${path}: Calculated median of time span between the backups sets is ${medianDateDiff} seconds"    
         }
-        
-        # Calculate the median of the differences
-        $medianDateDiff = Get-Median -numbers $differences
-        Write-Host "${path}: Calculated median of time span between the backups sets is ${medianDateDiff} seconds"
+        else {
+            # only calculate the difference as median calculation needs at least 3 samples
+            $medianDateDiff = ($backupItems[1].LastWriteTime - $backupItems[0].LastWriteTime).TotalSeconds
+            $medianDateDiff = [math]::Round($medianDateDiff)
+            Write-Host "${path}: Calculated time span between the backups sets is ${medianDateDiff} seconds"
+        }
 
         # Check if the difference between the last backup timestamp and now is below the calculated median with a 5 % discrepancy allowed        
         $differenceToCheck = ([datetime]$currentDate - [datetime]$backupItems[-1].LastWriteTime).TotalSeconds
