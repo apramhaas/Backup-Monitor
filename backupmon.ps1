@@ -16,11 +16,11 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-    # Version: 1.1.0
-    # History:
-    # - 1.0.0: Initial release
-    # - 1.1.0: Added support for multiple email addresses in the notificationEmail parameter (2025-03-19)
-    # - 1.2.0: Enforce minimum backup sets to 2 and improve backup time pattern calculations (2025-04-02)
+    History:
+    - 1.0.0: Initial release
+    - 1.1.0: Added support for multiple email addresses in the notificationEmail parameter (2025-03-19)
+    - 1.2.0: Enforce minimum backup sets to 2 and improve backup time pattern calculations (2025-04-02)
+    - 1.3.0: Refactor backup size calculation to improve accuracy and add human-readable output for reference size (2025-04-03)
 #>
 
 param
@@ -212,15 +212,14 @@ foreach ($path in $backupPaths) {
 
             # Calculate the median of the differences
             $medianDateDiff = Get-Median -numbers $differences
-            $medianDateDiff = [math]::Round($medianDateDiff)
-            Write-Host "${path}: Calculated median of time span between the backups sets is ${medianDateDiff} seconds"    
+            $medianDateDiff = [math]::Round($medianDateDiff)  
         }
         else {
             # only calculate the difference as median calculation needs at least 3 samples
             $medianDateDiff = ($backupItems[1].LastWriteTime - $backupItems[0].LastWriteTime).TotalSeconds
-            $medianDateDiff = [math]::Round($medianDateDiff)
-            Write-Host "${path}: Calculated time span between the backups sets is ${medianDateDiff} seconds"
+            $medianDateDiff = [math]::Round($medianDateDiff)  
         }
+        Write-Host "  Calculated time span between the backup sets is ${medianDateDiff} seconds"
 
         # Check if the difference between the last backup timestamp and now is below the calculated median with a 5 % discrepancy allowed        
         $differenceToCheck = ([datetime]$currentDate - [datetime]$backupItems[-1].LastWriteTime).TotalSeconds
@@ -269,14 +268,42 @@ foreach ($path in $backupPaths) {
             $backupSizes += Get-BackupSize $backupItems[$i].FullName
         }
 
-        # Calculate the median of all previous backup sizes
-        $medianSize = Get-Median -numbers $backupSizes
-        $lastBackupSize = Get-BackupSize $backupItems[-1].FullName
-        # Define the allowable discrepancy (5%)
-        $allowableDiscrepancy = $medianSize * 0.05
-        if ($lastBackupSize -lt $allowableDiscrepancy) {
-            $failedBackups += "${path}: Last backup is more than 5% smaller than usual based on the previous backups."
-        }       
+        # Calculate the median of all previous backup sizes if at least 2 backup sets (before the latest) are available
+        if ($null -ne $backupSizes -and $backupSizes.Count -gt 0) {
+            if ($backupSizes.Count -gt 1) {        
+                $referenceSize = Get-Median -numbers $backupSizes
+                $referenceSize = [math]::Round($referenceSize)      
+            }
+            else {
+                # take first backup as reference as we have only one sample
+                $referenceSize = $backupSizes[0]
+                $referenceSize = [math]::Round($referenceSize)  
+            }
+
+            $humanReadableSize = if ($referenceSize -ge 1TB) {
+                "{0:N2} TB" -f ($referenceSize / 1TB)
+            }
+            elseif ($referenceSize -ge 1GB) {
+                "{0:N2} GB" -f ($referenceSize / 1GB)
+            }
+            elseif ($referenceSize -ge 1MB) {
+                "{0:N2} MB" -f ($referenceSize / 1MB)
+            }
+            elseif ($referenceSize -ge 1KB) {
+                "{0:N2} KB" -f ($referenceSize / 1KB)
+            }
+            else {
+                "$referenceSize Bytes"
+            }
+            Write-Host "  Reference size of last backup sets is ${humanReadableSize}"
+
+            # Define the allowable discrepancy (5%)
+            $allowableDiscrepancy = $referenceSize * 0.05
+            $lastBackupSize = Get-BackupSize $backupItems[-1].FullName                
+            if ($lastBackupSize -lt $allowableDiscrepancy) {
+                $failedBackups += "${path}: Last backup is more than 5% smaller than usual based on the previous backups."
+            }    
+        }   
     }
     else {
         $failedBackups += "${path}: Path not found."
