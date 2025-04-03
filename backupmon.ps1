@@ -21,6 +21,7 @@
     - 1.1.0: Added support for multiple email addresses in the notificationEmail parameter (2025-03-19)
     - 1.2.0: Enforce minimum backup sets to 2 and improve backup time pattern calculations (2025-04-02)
     - 1.3.0: Refactor backup size calculation to improve accuracy and add human-readable output for reference size (2025-04-03)
+    - 1.3.1: Add human-readable size conversion function fix bug in backup size validation (2025-04-03)
 #>
 
 param
@@ -96,6 +97,30 @@ function Get-Median {
     }
 
     return $median
+}
+
+function Convert-ToHumanReadableSize {
+    param (
+        [Int64]$sizeInBytes
+    )
+    
+    $humanReadableSize = if ($sizeInBytes -ge 1TB) {
+        "{0:N2} TB" -f ($sizeInBytes / 1TB)
+    }
+    elseif ($sizeInBytes -ge 1GB) {
+        "{0:N2} GB" -f ($sizeInBytes / 1GB)
+    }
+    elseif ($sizeInBytes -ge 1MB) {
+        "{0:N2} MB" -f ($sizeInBytes / 1MB)
+    }
+    elseif ($sizeInBytes -ge 1KB) {
+        "{0:N2} KB" -f ($sizeInBytes / 1KB)
+    }
+    else {
+        "$sizeInBytes Bytes"
+    }
+
+    return $humanReadableSize
 }
 
 # Read config file
@@ -280,28 +305,14 @@ foreach ($path in $backupPaths) {
                 $referenceSize = [math]::Round($referenceSize)  
             }
 
-            $humanReadableSize = if ($referenceSize -ge 1TB) {
-                "{0:N2} TB" -f ($referenceSize / 1TB)
-            }
-            elseif ($referenceSize -ge 1GB) {
-                "{0:N2} GB" -f ($referenceSize / 1GB)
-            }
-            elseif ($referenceSize -ge 1MB) {
-                "{0:N2} MB" -f ($referenceSize / 1MB)
-            }
-            elseif ($referenceSize -ge 1KB) {
-                "{0:N2} KB" -f ($referenceSize / 1KB)
-            }
-            else {
-                "$referenceSize Bytes"
-            }
-            Write-Host "  Reference size of last backup sets is ${humanReadableSize}"
+            
+            Write-Host "  Reference size of last backup sets is $(Convert-ToHumanReadableSize -sizeInBytes $referenceSize)"
 
             # Define the allowable discrepancy (5%)
-            $allowableDiscrepancy = $referenceSize * 0.05
+            $allowableDiscrepancy = [math]::Round($referenceSize * 0.05)
             $lastBackupSize = Get-BackupSize $backupItems[-1].FullName                
-            if ($lastBackupSize -lt $allowableDiscrepancy) {
-                $failedBackups += "${path}: Last backup is more than 5% smaller than usual based on the previous backups."
+            if ($lastBackupSize -lt ($referenceSize - $allowableDiscrepancy)) {
+                $failedBackups += "${path}: Last backup (size $(Convert-ToHumanReadableSize -sizeInBytes $lastBackupSize)) is more than 5% smaller than usual based on the previous backup sets ($(Convert-ToHumanReadableSize -sizeInBytes $referenceSize))."
             }    
         }   
     }
