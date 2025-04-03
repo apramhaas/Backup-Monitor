@@ -22,6 +22,7 @@
     - 1.2.0: Enforce minimum backup sets to 2 and improve backup time pattern calculations (2025-04-02)
     - 1.3.0: Refactor backup size calculation to improve accuracy and add human-readable output for reference size (2025-04-03)
     - 1.3.1: Add human-readable size conversion function fix bug in backup size validation (2025-04-03)
+    - 1.3.2: Fix bug in email notification handling and minor log improvements (2025-04-03)
 #>
 
 param
@@ -308,11 +309,12 @@ foreach ($path in $backupPaths) {
             
             Write-Host "  Reference size of last backup sets is $(Convert-ToHumanReadableSize -sizeInBytes $referenceSize)"
 
-            # Define the allowable discrepancy (5%)
+            # Define the allowable discrepancy (5 %)
             $allowableDiscrepancy = [math]::Round($referenceSize * 0.05)
             $lastBackupSize = Get-BackupSize $backupItems[-1].FullName                
             if ($lastBackupSize -lt ($referenceSize - $allowableDiscrepancy)) {
-                $failedBackups += "${path}: Last backup (size $(Convert-ToHumanReadableSize -sizeInBytes $lastBackupSize)) is more than 5% smaller than usual based on the previous backup sets ($(Convert-ToHumanReadableSize -sizeInBytes $referenceSize))."
+                $failedBackups += "${path}: Last backup (size $(Convert-ToHumanReadableSize -sizeInBytes $lastBackupSize)) is more than 5 % smaller than usual based on the previous backup sets ($(Convert-ToHumanReadableSize -sizeInBytes $referenceSize))."
+                $alarmOnLastBackup = $True
             }    
         }   
     }
@@ -322,8 +324,8 @@ foreach ($path in $backupPaths) {
 }
 
 # Generate a summary report
-$reportBody = "Backup monitor summary report - ${currentDate}`n"
-$reportBody += "===============================================`n"
+$reportBody =  "Backup monitor summary report - ${currentDate}`n"
+$reportBody += "******************************************************`n`n"
 
 $reportBody += "Checked backup paths:`n"
 foreach ($path in $backupPaths) {
@@ -342,8 +344,6 @@ else {
 
 # Send the summary report via email
 if ($notificationEmail -ne "" -And $smtpServer -ne "" -And $notifyType -ne "off") {
-    Write-Host "`nPreparing to send e-mail with summary to $notificationEmail"
-
     # Split the email addresses and validate each one
     $emailAddresses = $notificationEmail -split ','
     $validEmailAddresses = @()
@@ -364,21 +364,21 @@ if ($notificationEmail -ne "" -And $smtpServer -ne "" -And $notifyType -ne "off"
         # Always send an email report
         if ($failedBackups.Count -eq 0 -And $notifyType -eq "always") {
             foreach ($email in $validEmailAddresses) {
-                Write-Host "Sending email to $email"
+                Write-Host "`nSending email to $email"
                 Send-EmailReport -subject "Backup monitor summary" -body $reportBody -email $email
             }
         }
         # Send email report only when an alarm is raised
         elseif ($failedBackups.Count -gt 0 -And $notifyType -eq "alarm") {
             foreach ($email in $validEmailAddresses) {
-                Write-Host "Sending email to $email"
+                Write-Host "`nSending email to $email"
                 Send-EmailReport -subject "Backup monitor summary with ALARMs" -body $reportBody -email $email
             }
         }
         # Send email report only when an alarm is raised regarding the newest backup
         elseif ($failedBackups.Count -gt 0 -And $notifyType -eq "alarmonlastbackup" -and $alarmOnLastBackup -eq $True) {
             foreach ($email in $validEmailAddresses) {
-                Write-Host "Sending email to $email"
+                Write-Host "`nSending email to $email"
                 Send-EmailReport -subject "Backup monitor summary with ALARMs" -body $reportBody -email $email
             }
         } 
