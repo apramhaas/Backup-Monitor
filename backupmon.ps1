@@ -23,6 +23,7 @@
     - 1.3.0: Refactor backup size calculation to improve accuracy and add human-readable output for reference size (2025-04-03)
     - 1.3.1: Add human-readable size conversion function fix bug in backup size validation (2025-04-03)
     - 1.3.2: Fix bug in email notification handling and minor log improvements (2025-04-03)
+    - 1.3.3: Update discrepancy threshold in backup time validation to 30% (2025-04-07)
 #>
 
 param
