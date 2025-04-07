@@ -258,7 +258,7 @@ foreach ($path in $backupPaths) {
         }
 
         # Check if there are irregularities between the backup creation times
-        # loop through the differences array and detect if there is a discrepancy > 5 %
+        # loop through the differences array and detect if there is a discrepancy > 30 %
         $exitloop = $False;
         if ($differences.Length -ge 2) {
             for ($i = 0; $i -lt ($differences.Length - 1); $i++) {                
@@ -272,11 +272,11 @@ foreach ($path in $backupPaths) {
                         Write-Host "leaf1 = $leaf1, leaf2 = $leaf2, leaf3 = $leaf3, discrepancy = $discrepancy (of differences between leaf1/leaf2 and leaf2/leaf3)"
                     }
 
-                    if ($discrepancy -gt 5) {
+                    if ($discrepancy -gt 30) {
                         $leaf1 = Split-Path -Path $backupItems[$i] -Leaf
                         $leaf2 = Split-Path -Path $backupItems[$i + 1] -Leaf
                         $leaf3 = Split-Path -Path $backupItems[$i + 2] -Leaf
-                        $failedBackups += "${path}: Detected a discrepancy greater than 5 % ($discrepancy % - $leaf1 / $leaf2 / $leaf3) between the backup set modification times."
+                        $failedBackups += "${path}: Detected a discrepancy greater than 30 % ($discrepancy % - $leaf1 / $leaf2 / $leaf3) between the backup set modification times."
                         # check if the alarm occured on the last backup an enable the flag for mail delivery
                         if ($i -eq ($differences.Length - 2)) {
                             $alarmOnLastBackup = $True
