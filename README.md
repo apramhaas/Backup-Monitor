@@ -14,9 +14,9 @@ The script performs the following checks on each backup set:
 
 1. **Minimum Backup Sets:** Ensures that there are a minimum number of backup sets available in the specified path. If a number smaller than `minBackupSets` is found and the last backup is not older than 25 hours, no alarm is generated because it is assumed that it is a new archive and needs to be filled with enough backups first.
 
-2. **Backup Frequency:** Detects the backup frequency pattern based on timestamps and checks if the latest backup aligns with the determined pattern.
+2. **Backup Frequency:** Detects the backup frequency pattern based on timestamps and checks if the latest backup aligns with the determined pattern. An alarm is generated if the time difference between backups deviates by more than 30% from the calculated median.
 
-3. **Backup Size:** Checks if the size of the latest backup is within an acceptable range based on the sizes of previous backups.
+3. **Backup Size:** Checks if the size of the latest backup is within an acceptable range based on the sizes of previous backups. An alarm is generated if the size of the latest backup deviates by more than 30% from the calculated median size of previous backups.
 
 ## Configuration and Parameters
 

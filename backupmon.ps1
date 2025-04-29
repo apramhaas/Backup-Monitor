@@ -24,6 +24,8 @@
     - 1.3.1: Add human-readable size conversion function fix bug in backup size validation (2025-04-03)
     - 1.3.2: Fix bug in email notification handling and minor log improvements (2025-04-03)
     - 1.3.3: Update discrepancy threshold in backup time validation to 30% (2025-04-07)
+    - 1.4.0: Added exception handling for Test-Path to catch network-related errors. (2025-04-29)
+             Increase threshold for backup size difference to 30 % to avoid false negatives (2025-04-29)
 #>
 
 param
@@ -125,6 +127,10 @@ function Convert-ToHumanReadableSize {
     return $humanReadableSize
 }
 
+# Initialize variables for tracking backups
+$failedBackups = @()
+$currentDate = Get-Date
+
 # Read config file
 if (Test-Path $config) {
     $configFileContents = Get-Content $config | ForEach-Object {
@@ -158,8 +164,20 @@ if (Test-Path $config) {
             }            
         }
         # If the line is a valid path, add it to the paths array
-        elseif (Test-Path $line -PathType Container) {
-            $backupPaths += $line                     
+        else {
+            try {
+                if (Test-Path $line -PathType Container) {
+                    $backupPaths += $line                     
+                }
+            }
+            catch [System.IO.IOException] {                
+                $failedBackups += "${line}: Error while accessing the path. Details: $($_.Exception.Message)"
+                $alarmOnLastBackup = $True
+            }
+            catch {                
+                $failedBackups += "${line}: Unexpected error. Details: $($_.Exception.Message)"
+                $alarmOnLastBackup = $True
+            }
         }
     }
 
@@ -184,10 +202,6 @@ else {
     Write-Host "Specified config file \"$config\" does not exist."
     exit 1
 }
-
-# Initialize variables for tracking backups
-$failedBackups = @()
-$currentDate = Get-Date
 
 Write-Host "`nStart backup check at $currentDate"
 # Loop through each backup path
@@ -310,11 +324,11 @@ foreach ($path in $backupPaths) {
             
             Write-Host "  Reference size of last backup sets is $(Convert-ToHumanReadableSize -sizeInBytes $referenceSize)"
 
-            # Define the allowable discrepancy (5 %)
-            $allowableDiscrepancy = [math]::Round($referenceSize * 0.05)
+            # Define the allowable discrepancy (30 %)
+            $allowableDiscrepancy = [math]::Round($referenceSize * 0.3)
             $lastBackupSize = Get-BackupSize $backupItems[-1].FullName                
             if ($lastBackupSize -lt ($referenceSize - $allowableDiscrepancy)) {
-                $failedBackups += "${path}: Last backup (size $(Convert-ToHumanReadableSize -sizeInBytes $lastBackupSize)) is more than 5 % smaller than usual based on the previous backup sets ($(Convert-ToHumanReadableSize -sizeInBytes $referenceSize))."
+                $failedBackups += "${path}: Last backup (size $(Convert-ToHumanReadableSize -sizeInBytes $lastBackupSize)) is more than 30 % smaller than usual based on the previous backup sets ($(Convert-ToHumanReadableSize -sizeInBytes $referenceSize))."
                 $alarmOnLastBackup = $True
             }    
         }   
